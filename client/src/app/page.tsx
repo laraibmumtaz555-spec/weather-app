@@ -10,13 +10,13 @@ import YoutubeSection from '@/components/YoutubeSection';
 import MapEmbed from '@/components/MapEmbed';
 
 export default function Home() {
-  const [weather, setWeather] = useState(null);
-  const [forecast, setForecast] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [darkMode, setDarkMode] = useState(false);
-  const [time, setTime] = useState('');
-  const [saved, setSaved] = useState(false);
+  const [weather, setWeather] = useState<any>(null);
+  const [forecast, setForecast] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [time, setTime] = useState<string>('');
+  const [saved, setSaved] = useState<boolean>(false);
 
   useEffect(() => {
     const update = () => {
@@ -72,7 +72,8 @@ export default function Home() {
 
     try {
       const isCoords = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/.test(query);
-      let weatherUrl, forecastUrl;
+      let weatherUrl: string;
+      let forecastUrl: string;
 
       if (isCoords) {
         const [lat, lon] = query.split(',');
@@ -113,7 +114,7 @@ export default function Home() {
     );
   };
 
-  const getBg = () => {
+  const getBg = (): string => {
     if (!weather) return darkMode ? '#0f172a' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     const main = weather.weather[0].main.toLowerCase();
     if (darkMode) return '#0f172a';
@@ -131,7 +132,6 @@ export default function Home() {
 
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem 1rem' }}>
 
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <h1 style={{
             fontSize: '3rem', fontWeight: 800, color: 'white',
@@ -144,14 +144,12 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Search */}
         <SearchBar
           onSearch={fetchWeather}
           onLocationSearch={fetchByLocation}
           darkMode={darkMode}
         />
 
-        {/* Saved notification */}
         {saved && (
           <div style={{
             marginTop: '1rem', padding: '0.8rem 1.5rem',
@@ -163,7 +161,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div style={{
             marginTop: '1rem', padding: '1rem 1.5rem',
@@ -175,30 +172,24 @@ export default function Home() {
           </div>
         )}
 
-        {/* Loading */}
         {loading && <LoadingSpinner />}
 
-        {/* Weather Card */}
         {weather && !loading && (
           <WeatherCard weather={weather} darkMode={darkMode} />
         )}
 
-        {/* 5-Day Forecast */}
         {forecast && !loading && (
           <ForecastSection forecast={forecast} darkMode={darkMode} />
         )}
 
-        {/* Google Map */}
         {weather && !loading && (
           <MapEmbed location={weather.name} />
         )}
 
-        {/* YouTube Videos */}
         {weather && !loading && (
           <YoutubeSection location={weather.name} />
         )}
 
-        {/* View Saved Searches */}
         {weather && !loading && (
           <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
             <a href="/saved" style={{
