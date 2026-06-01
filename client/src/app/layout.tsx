@@ -1,17 +1,19 @@
-// layout.jsx — Root layout, wraps every page
-// This is where we add dark mode support and global styles
-
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'WeatherApp — PM Accelerator',
   description: 'Full stack weather application built for PM Accelerator internship assessment',
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className={inter.className}>
