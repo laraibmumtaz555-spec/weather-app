@@ -113,18 +113,21 @@ http://localhost:3000
 
 ## 🌐 Deployment
 
-- **Frontend:** Vercel — https://your-app.vercel.app
-- **Backend:** Render — https://your-api.render.com
+- **Frontend:** [Vercel — https://weather-app-zeta-three-42.vercel.app/](https://weather-app-zeta-three-42.vercel.app/  )   
+- **Backend:** weather-app-production-8de2.up.railway.app 
 - **Database:** MongoDB Atlas
 
 ---
 
 ## 📸 Screenshots
 
-> Search for any city, zip code, GPS coordinates or landmark
+<img width="924" height="407" alt="image" src="https://github.com/user-attachments/assets/7f907d34-6966-40a9-8d9f-b52c6c44f040" /><img width="919" height="418" alt="image" src="https://github.com/user-attachments/assets/2acea065-6a5f-4ff3-89ba-d2d9f56c30f7" /><img width="639" height="293" alt="image" src="https://github.com/user-attachments/assets/0c2214da-0ced-4879-8dca-b80503ab1088" /><img width="671" height="338" alt="image" src="https://github.com/user-attachments/assets/1b105c0c-42e4-4a8a-b65a-da40b914c012" /><img width="667" height="274" alt="image" src="https://github.com/user-attachments/assets/8f573808-c45b-46f0-89db-20b45bb58a12" /><img width="759" height="413" alt="image" src="https://github.com/user-attachments/assets/6795d962-d02b-4265-b594-624e19af184b" />
+
+
+
+
+
+
 
 ---
 
-## 👩‍💻 About PM Accelerator
-
-Product Manager Accelerator helps aspiring Product Managers break into product management through mentorship, community, and hands-on experience. Learn more at [LinkedIn](https://www.linkedin.com/company/product-manager-accelerator).
