@@ -1,220 +1,308 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import SearchBar from '@/components/SearchBar';
-import WeatherCard from '@/components/WeatherCard';
-import ForecastSection from '@/components/ForecastSection';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import Navbar from '@/components/Navbar';
-import YoutubeSection from '@/components/YoutubeSection';
-import MapEmbed from '@/components/MapEmbed';
 
-export default function Home() {
-  const [weather, setWeather] = useState<any>(null);
-  const [forecast, setForecast] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
-  const [darkMode, setDarkMode] = useState<boolean>(false);
-  const [time, setTime] = useState<string>('');
-  const [saved, setSaved] = useState<boolean>(false);
+export default function SavedSearches() {
+  const [searches, setSearches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editNotes, setEditNotes] = useState('');
+  const [editLabel, setEditLabel] = useState('');
+  const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    const update = () => {
-      const now = new Date();
-      setTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    };
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
 
-  const saveToDatabase = async (weatherData: any) => {
+  const fetchSearches = async () => {
     try {
-      const body = {
-        location: weatherData.name,
-        country: weatherData.sys.country,
-        coordinates: {
-          lat: weatherData.coord.lat,
-          lon: weatherData.coord.lon,
-        },
-        temperature: Math.round(weatherData.main.temp),
-        feelsLike: Math.round(weatherData.main.feels_like),
-        humidity: weatherData.main.humidity,
-        windSpeed: weatherData.wind.speed,
-        condition: weatherData.weather[0].main,
-        description: weatherData.weather[0].description,
-        icon: weatherData.weather[0].icon,
-        pressure: weatherData.main.pressure,
-        visibility: weatherData.visibility,
-        sunrise: weatherData.sys.sunrise,
-        sunset: weatherData.sys.sunset,
-      };
-
-      await fetch(`${BACKEND_URL}/searches`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      const res = await fetch(`${BACKEND_URL}/searches`);
+      const data = await res.json();
+      setSearches(data.data || []);
     } catch (err) {
-      console.error('Failed to save to database:', err);
-    }
-  };
-
-  const fetchWeather = async (query: string) => {
-    if (!query.trim()) { setError('Please enter a location'); return; }
-    setLoading(true); setError(''); setWeather(null); setForecast(null); setSaved(false);
-
-    try {
-      const isCoords = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/.test(query);
-      let weatherUrl: string;
-      let forecastUrl: string;
-
-      if (isCoords) {
-        const [lat, lon] = query.split(',');
-        weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat.trim()}&lon=${lon.trim()}&appid=${API_KEY}&units=metric`;
-        forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat.trim()}&lon=${lon.trim()}&appid=${API_KEY}&units=metric`;
-      } else {
-        weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${query}&appid=${API_KEY}&units=metric`;
-        forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${query}&appid=${API_KEY}&units=metric`;
-      }
-
-      const weatherRes = await fetch(weatherUrl);
-      if (!weatherRes.ok) {
-        if (weatherRes.status === 404) throw new Error('City not found. Please check the name and try again.');
-        throw new Error('Failed to fetch weather data. Please try again.');
-      }
-
-      const weatherData = await weatherRes.json();
-      const forecastRes = await fetch(forecastUrl);
-      const forecastData = await forecastRes.json();
-
-      setWeather(weatherData);
-      setForecast(forecastData);
-      await saveToDatabase(weatherData);
-
-    } catch (err: any) {
-      setError(err.message);
+      console.error('Failed to fetch searches');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchByLocation = () => {
-    if (!navigator.geolocation) { setError('Geolocation not supported.'); return; }
-    setLoading(true); setError('');
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => fetchWeather(`${coords.latitude},${coords.longitude}`),
-      () => { setError('Location access denied.'); setLoading(false); }
-    );
+  useEffect(() => {
+    fetchSearches();
+  }, []);
+
+  const deleteSearch = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this search?')) return;
+    try {
+      await fetch(`${BACKEND_URL}/searches/${id}`, { method: 'DELETE' });
+      setMessage('✅ Search deleted successfully!');
+      fetchSearches();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setMessage('❌ Failed to delete search');
+    }
   };
 
-  const getBg = (): string => {
-    if (!weather) return darkMode ? '#0f172a' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-    const main = weather.weather[0].main.toLowerCase();
-    if (darkMode) return '#0f172a';
-    if (main.includes('rain')) return 'linear-gradient(135deg, #373B44 0%, #4286f4 100%)';
-    if (main.includes('cloud')) return 'linear-gradient(135deg, #757F9A 0%, #D7DDE8 100%)';
-    if (main.includes('snow')) return 'linear-gradient(135deg, #E0EAFC 0%, #CFDEF3 100%)';
-    if (main.includes('thunder')) return 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)';
-    if (main.includes('clear')) return 'linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #fda085 100%)';
-    return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const updateSearch = async (id: string) => {
+    try {
+      await fetch(`${BACKEND_URL}/searches/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: editNotes, label: editLabel }),
+      });
+      setMessage('✅ Search updated successfully!');
+      setEditId(null);
+      fetchSearches();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setMessage('❌ Failed to update search');
+    }
+  };
+
+  const exportData = async (format: string) => {
+    window.open(`${BACKEND_URL}/searches/export?format=${format}`, '_blank');
+  };
+
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric',
+      year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+  const getWeatherEmoji = (condition: string) => {
+    if (!condition) return '🌤️';
+    const c = condition.toLowerCase();
+    if (c.includes('rain')) return '🌧️';
+    if (c.includes('cloud')) return '☁️';
+    if (c.includes('snow')) return '❄️';
+    if (c.includes('thunder')) return '⛈️';
+    if (c.includes('clear')) return '☀️';
+    return '🌤️';
   };
 
   return (
-    <div style={{ background: getBg(), minHeight: '100vh', transition: 'background 1s ease' }}>
-      <Navbar darkMode={darkMode} setDarkMode={setDarkMode} time={time} />
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '2rem 1rem',
+    }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem 1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <a href="/" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '0.9rem', marginBottom: '0.5rem', display: 'block' }}>
+              ← Back to Weather App
+            </a>
+            <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: 800, margin: 0 }}>
+              📋 Saved Searches
+            </h1>
+            <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '0.3rem', fontSize: '0.9rem' }}>
+              {searches.length} searches saved in database
+            </p>
+          </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h1 style={{
-            fontSize: '3rem', fontWeight: 800, color: 'white',
-            textShadow: '0 2px 20px rgba(0,0,0,0.3)', margin: 0
-          }}>
-            🌤️ Weather App
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: '0.5rem', fontSize: '0.9rem' }}>
-            Real-time weather data powered by OpenWeatherMap
-          </p>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {['json', 'csv', 'markdown'].map((format) => (
+              <button
+                key={format}
+                onClick={() => exportData(format)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(255,255,255,0.2)',
+                  color: 'white', border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '50px', cursor: 'pointer',
+                  fontSize: '0.8rem', fontWeight: 600,
+                  textTransform: 'uppercase',
+                }}
+              >
+                ⬇️ {format}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <SearchBar
-          onSearch={fetchWeather}
-          onLocationSearch={fetchByLocation}
-          darkMode={darkMode}
-        />
-
-        {saved && (
+        {message && (
           <div style={{
-            marginTop: '1rem', padding: '0.8rem 1.5rem',
-            background: 'rgba(34,197,94,0.2)',
-            border: '1px solid rgba(34,197,94,0.4)',
-            borderRadius: '16px', color: 'white', textAlign: 'center',
+            padding: '1rem', borderRadius: '16px', marginBottom: '1rem',
+            background: message.includes('✅') ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
+            border: message.includes('✅') ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(239,68,68,0.4)',
+            color: 'white', textAlign: 'center',
           }}>
-            ✅ Search saved to database!
+            {message}
           </div>
         )}
 
-        {error && (
-          <div style={{
-            marginTop: '1rem', padding: '1rem 1.5rem',
-            background: 'rgba(239,68,68,0.2)',
-            border: '1px solid rgba(239,68,68,0.4)',
-            borderRadius: '16px', color: 'white', textAlign: 'center',
-          }}>
-            ⚠️ {error}
+        {loading && (
+          <div style={{ textAlign: 'center', color: 'white', padding: '3rem' }}>
+            Loading saved searches...
           </div>
         )}
 
-        {loading && <LoadingSpinner />}
-
-        {weather && !loading && (
-          <WeatherCard weather={weather} darkMode={darkMode} />
-        )}
-
-        {forecast && !loading && (
-          <ForecastSection forecast={forecast} darkMode={darkMode} />
-        )}
-
-        {weather && !loading && (
-          <MapEmbed location={weather.name} />
-        )}
-
-        {weather && !loading && (
-          <YoutubeSection location={weather.name} />
-        )}
-
-        {weather && !loading && (
-          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <a href="/saved" style={{
-              color: 'rgba(255,255,255,0.8)',
-              textDecoration: 'none',
-              fontSize: '0.9rem',
-              border: '1px solid rgba(255,255,255,0.3)',
-              padding: '0.6rem 1.5rem',
-              borderRadius: '50px',
-              background: 'rgba(255,255,255,0.1)',
+        {!loading && searches.length === 0 && (
+          <div style={{
+            textAlign: 'center', padding: '4rem',
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: '24px', color: 'white',
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔍</div>
+            <h3 style={{ margin: '0 0 0.5rem' }}>No saved searches yet</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)' }}>Search for a city on the main page to save it here</p>
+            <a href="/" style={{
+              display: 'inline-block', marginTop: '1rem',
+              padding: '0.8rem 2rem',
+              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              color: 'white', borderRadius: '50px', textDecoration: 'none', fontWeight: 600,
             }}>
-              📋 View All Saved Searches →
+              Search Weather →
             </a>
           </div>
         )}
 
-      </main>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {searches.map((search) => (
+            <div key={search._id} style={{
+              background: 'rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '20px',
+              border: '1px solid rgba(255,255,255,0.25)',
+              padding: '1.5rem',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '2.5rem' }}>{getWeatherEmoji(search.condition)}</span>
+                  <div>
+                    <h3 style={{ color: 'white', margin: 0, fontSize: '1.3rem', fontWeight: 700 }}>
+                      {search.location}, {search.country}
+                    </h3>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', margin: '2px 0 0', fontSize: '0.8rem' }}>
+                      {formatDate(search.searchedAt)}
+                    </p>
+                    {search.label && (
+                      <span style={{
+                        display: 'inline-block', marginTop: '4px',
+                        padding: '2px 10px',
+                        background: 'rgba(255,255,255,0.2)',
+                        borderRadius: '50px', color: 'white', fontSize: '0.75rem',
+                      }}>
+                        🏷️ {search.label}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-      <footer style={{
-        textAlign: 'center', padding: '2rem',
-        color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem'
-      }}>
-        Built by Laraib for PM Accelerator Technical Assessment ·
-        Product Manager Accelerator helps aspiring PMs break into product management
-      </footer>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => { setEditId(search._id); setEditNotes(search.notes || ''); setEditLabel(search.label || ''); }}
+                    style={{
+                      padding: '0.4rem 1rem',
+                      background: 'rgba(255,255,255,0.2)',
+                      color: 'white', border: '1px solid rgba(255,255,255,0.3)',
+                      borderRadius: '50px', cursor: 'pointer', fontSize: '0.8rem',
+                    }}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={() => deleteSearch(search._id)}
+                    style={{
+                      padding: '0.4rem 1rem',
+                      background: 'rgba(239,68,68,0.3)',
+                      color: 'white', border: '1px solid rgba(239,68,68,0.4)',
+                      borderRadius: '50px', cursor: 'pointer', fontSize: '0.8rem',
+                    }}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '1rem' }}>
+                {[
+                  { label: 'Temp', value: `${search.temperature}°C`, icon: '🌡️' },
+                  { label: 'Humidity', value: `${search.humidity}%`, icon: '💧' },
+                  { label: 'Wind', value: `${search.windSpeed} m/s`, icon: '💨' },
+                  { label: 'Condition', value: search.condition, icon: '☁️' },
+                ].map((stat) => (
+                  <div key={stat.label} style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    borderRadius: '12px', padding: '0.8rem', textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: '1.2rem' }}>{stat.icon}</div>
+                    <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{stat.value}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem' }}>{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {search.notes && (
+                <div style={{
+                  marginTop: '1rem', padding: '0.8rem 1rem',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '12px', color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem',
+                }}>
+                  📝 {search.notes}
+                </div>
+              )}
+
+              {editId === search._id && (
+                <div style={{
+                  marginTop: '1rem', padding: '1rem',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '16px', border: '1px solid rgba(255,255,255,0.2)',
+                }}>
+                  <input
+                    type="text"
+                    placeholder="Add a label (e.g. Business Trip)"
+                    value={editLabel}
+                    onChange={(e) => setEditLabel(e.target.value)}
+                    style={{
+                      width: '100%', padding: '0.7rem 1rem',
+                      borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)',
+                      background: 'rgba(255,255,255,0.15)', color: 'white',
+                      fontSize: '0.9rem', marginBottom: '8px', outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <textarea
+                    placeholder="Add notes about this search..."
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    rows={3}
+                    style={{
+                      width: '100%', padding: '0.7rem 1rem',
+                      borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)',
+                      background: 'rgba(255,255,255,0.15)', color: 'white',
+                      fontSize: '0.9rem', outline: 'none', resize: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button
+                      onClick={() => updateSearch(search._id)}
+                      style={{
+                        padding: '0.6rem 1.5rem',
+                        background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                        color: 'white', border: 'none',
+                        borderRadius: '50px', cursor: 'pointer', fontWeight: 600,
+                      }}
+                    >
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={() => setEditId(null)}
+                      style={{
+                        padding: '0.6rem 1.5rem',
+                        background: 'rgba(255,255,255,0.1)',
+                        color: 'white', border: '1px solid rgba(255,255,255,0.3)',
+                        borderRadius: '50px', cursor: 'pointer',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
