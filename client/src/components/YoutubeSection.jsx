@@ -34,19 +34,6 @@ export default function YoutubeSection({ location }) {
 
   if (!location) return null;
 
-  const cardStyle = {
-    borderRadius: '16px',
-    overflow: 'hidden',
-    background: 'rgba(0,0,0,0.3)',
-    cursor: 'pointer',
-  };
-
-  const imgStyle = {
-    width: '100%',
-    height: '140px',
-    objectFit: 'cover' as const,
-  };
-
   return (
     <div style={{
       marginTop: '1.5rem',
@@ -77,8 +64,8 @@ export default function YoutubeSection({ location }) {
           const url = 'https://www.youtube.com/watch?v=' + videoId;
           return (
             <a key={videoId} href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-              <div style={cardStyle}>
-                <img src={thumbnail} alt={title} style={imgStyle} />
+              <div style={{ borderRadius: '16px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', cursor: 'pointer' }}>
+                <img src={thumbnail} alt={title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
                 <div style={{ padding: '0.8rem' }}>
                   <p style={{ color: 'white', fontSize: '0.8rem', fontWeight: 600, margin: 0, lineHeight: 1.4 }}>
                     {title}
